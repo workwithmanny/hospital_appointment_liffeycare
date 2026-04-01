@@ -50,6 +50,16 @@ export async function POST(request: Request) {
         "application/pdf",
         "text/plain",
         "application/zip",
+        "text/csv",
+        "application/json",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "audio/*",
+        "video/*",
       ],
     });
   }

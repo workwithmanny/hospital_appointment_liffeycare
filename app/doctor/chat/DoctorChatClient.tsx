@@ -747,6 +747,7 @@ export function DoctorChatClient({
           {" "}
           <DirectMessageComposer
             compact
+            userRole="doctor"
             recipientId={selectedThread?.appointment.patientId ?? ""}
             recipientName={selectedThread?.appointment.patientName ?? "Patient"}
             appointmentId={selectedThread?.appointment.id === "direct-chat" ? undefined : selectedThread?.appointment.id}

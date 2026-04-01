@@ -6,7 +6,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const sendThreadMessageSchema = z.object({
   threadId: z.string().uuid(),
-  body: z.string().min(1).max(1000),
+  body: z.string().max(1000),
   attachment: z
     .object({
       fileName: z.string(),
@@ -20,6 +20,9 @@ const sendThreadMessageSchema = z.object({
       publicUrl: z.string().url().optional(),
     })
     .optional(),
+}).refine((data) => data.body.length > 0 || data.attachment, {
+  message: "Message or attachment is required",
+  path: ["body"],
 });
 
 export async function POST(request: Request) {
@@ -71,7 +74,7 @@ export async function POST(request: Request) {
       thread_id: parsed.data.threadId,
       sender_id: user.id,
       recipient_id: recipientId,
-      body: parsed.data.body,
+      body: parsed.data.body || "\u200B", // zero-width space for file-only messages
       message_type: "direct",
     })
     .select(`

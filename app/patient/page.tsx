@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
+import { OnboardingBanner } from "@/components/onboarding-banner";
 export default async function PatientPage() {
   const user = await getSessionUser();
   assertRole(user, ["patient"]);
@@ -29,7 +30,7 @@ export default async function PatientPage() {
   // Get patient profile
   const { data: patientProfile } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, has_completed_onboarding")
     .eq("id", user?.id ?? "")
     .single();
   // Calculate stats
@@ -55,6 +56,17 @@ export default async function PatientPage() {
   });
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      {/* Onboarding Banner - only show for first-time users */}
+      {!patientProfile?.has_completed_onboarding && (
+        <div className="mb-6">
+          <OnboardingBanner 
+            userId={user?.id ?? ""} 
+            profilePath="/patient/profile" 
+            role="patient" 
+          />
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">

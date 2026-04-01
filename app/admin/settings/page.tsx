@@ -72,7 +72,7 @@ export default function AdminSettingsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
                   <input
                     type="email"
-                    defaultValue="admin@liffeycare.com"
+                    defaultValue="contact@liffeycare.online"
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

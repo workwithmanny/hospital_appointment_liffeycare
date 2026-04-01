@@ -47,12 +47,15 @@ export function DirectMessageComposer({
       if (!doctorId) {
         throw new Error("Please select a doctor.");
       }
-      const body = String(form.get("body") || "");
+      const body = String(form.get("body") || "").trim();
       const file = form.get("file");
       let fileAttachment = attachment;
       if (file instanceof File && file.size > 0) {
         fileAttachment = await upload(file, doctorId);
         setAttachment(fileAttachment);
+      }
+      if (!body && !fileAttachment) {
+        throw new Error("Please enter a message or attach a file.");
       }
       const res = await fetch("/api/messages/send-direct", {
         method: "POST",
@@ -114,7 +117,6 @@ export function DirectMessageComposer({
           name="body"
           className="input min-h-[90px]"
           placeholder="Type your message here..."
-          required
         />{" "}
       </div>{" "}
       <div>

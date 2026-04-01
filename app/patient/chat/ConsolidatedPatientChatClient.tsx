@@ -9,6 +9,13 @@ import {
   Calendar,
   ClipboardList,
   MessageSquare,
+  Download,
+  X,
+  ZoomIn,
+  FileSpreadsheet,
+  Presentation,
+  Archive,
+  FileCode,
 } from "lucide-react";
 import { DirectMessageComposer } from "@/components/DirectMessageComposer";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -67,6 +74,80 @@ type ChatMessage = {
 function isImageFile(fileName: string): boolean {
   const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
   return imageExtensions.some(ext => fileName.toLowerCase().endsWith(ext));
+}
+
+// Helper to check if file is PDF
+function isPdfFile(fileName: string): boolean {
+  return fileName.toLowerCase().endsWith('.pdf');
+}
+
+// Helper to check if file is CSV
+function isCsvFile(fileName: string): boolean {
+  return fileName.toLowerCase().endsWith('.csv');
+}
+
+// Helper to check if file is Excel
+function isExcelFile(fileName: string): boolean {
+  const extensions = ['.xls', '.xlsx', '.xlsm'];
+  return extensions.some(ext => fileName.toLowerCase().endsWith(ext));
+}
+
+// Helper to check if file is Word
+function isWordFile(fileName: string): boolean {
+  const extensions = ['.doc', '.docx'];
+  return extensions.some(ext => fileName.toLowerCase().endsWith(ext));
+}
+
+// Helper to check if file is PowerPoint
+function isPowerPointFile(fileName: string): boolean {
+  const extensions = ['.ppt', '.pptx'];
+  return extensions.some(ext => fileName.toLowerCase().endsWith(ext));
+}
+
+// Helper to check if file is ZIP
+function isZipFile(fileName: string): boolean {
+  return fileName.toLowerCase().endsWith('.zip');
+}
+
+// Helper to check if file is JSON
+function isJsonFile(fileName: string): boolean {
+  return fileName.toLowerCase().endsWith('.json');
+}
+
+// Helper to get file icon based on type
+function getFileIcon(fileName: string) {
+  if (isPdfFile(fileName)) return "pdf";
+  if (isImageFile(fileName)) return "image";
+  return "file";
+}
+
+// Helper to format file size
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+// Download function that actually downloads the file
+async function downloadFile(url: string, fileName: string) {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    console.error("Download failed:", error);
+    // Fallback: open in new tab
+    window.open(url, "_blank");
+  }
 }
 
 // Helper to construct public URL from file path
@@ -149,6 +230,8 @@ export function ConsolidatedPatientChatClient({
   const [threads, setThreads] = useState<ConversationThread[]>([]);
   const [selectedMessages, setSelectedMessages] = useState<ChatMessage[]>([]);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{url: string, fileName: string} | null>(null);
   const [peerPresence, setPeerPresence] = useState<{
     isOnline: boolean;
     lastSeenAt: string | null;
@@ -647,48 +730,87 @@ export function ConsolidatedPatientChatClient({
                               >
                                 {isImageFile(attachment.fileName) ? (
                                   <div className="space-y-2">
-                                    <img
-                                      src={attachment.publicUrl}
-                                      alt={attachment.fileName}
-                                      className="max-w-full h-auto rounded-lg border border-border"
-                                      loading="lazy"
-                                    />
+                                    <div 
+                                      className="relative cursor-pointer group"
+                                      onClick={() => {
+                                        setSelectedImage({url: attachment.publicUrl, fileName: attachment.fileName});
+                                        setImageModalOpen(true);
+                                      }}
+                                    >
+                                      <img
+                                        src={attachment.publicUrl}
+                                        alt={attachment.fileName}
+                                        className="max-w-full h-auto rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
+                                        loading="lazy"
+                                      />
+                                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-lg">
+                                        <ZoomIn className="h-8 w-8 text-white" />
+                                      </div>
+                                    </div>
                                     <div className="flex items-center justify-between">
                                       <span className="truncate text-xs text-text-secondary font-medium">
                                         {attachment.fileName}
                                       </span>
                                       <div className="flex gap-1">
-                                        <a
-                                          href={attachment.publicUrl}
-                                          target="_blank"
-                                          rel="noreferrer"
+                                        <button
+                                          onClick={() => downloadFile(attachment.publicUrl, attachment.fileName)}
                                           className="inline-flex items-center gap-1 rounded-lg bg-[#14b6a6] px-2 py-1 text-xs text-white hover:bg-[#0d9488] transition-colors"
                                         >
-                                          <FileText className="h-3 w-3" />
-                                          Open
-                                        </a>
+                                          <Download className="h-3 w-3" />
+                                          Download
+                                        </button>
                                       </div>
                                     </div>
                                   </div>
                                 ) : (
-                                  <div>
-                                    <div className="flex items-center gap-2">
-                                      <FileText className="h-4 w-4 text-text-secondary" />
-                                      <span className="truncate text-xs text-text-secondary font-medium">
+                                  <div className="flex items-center gap-3 p-2 bg-white rounded-lg">
+                                    {/* WhatsApp-style file preview */}
+                                    <div className="flex-shrink-0">
+                                      {isExcelFile(attachment.fileName) || isCsvFile(attachment.fileName) ? (
+                                        <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                          <FileSpreadsheet className="h-6 w-6 text-green-600" />
+                                        </div>
+                                      ) : isWordFile(attachment.fileName) ? (
+                                        <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                          <FileText className="h-6 w-6 text-blue-600" />
+                                        </div>
+                                      ) : isPowerPointFile(attachment.fileName) ? (
+                                        <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                          <Presentation className="h-6 w-6 text-orange-600" />
+                                        </div>
+                                      ) : isZipFile(attachment.fileName) ? (
+                                        <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                          <Archive className="h-6 w-6 text-yellow-600" />
+                                        </div>
+                                      ) : isJsonFile(attachment.fileName) ? (
+                                        <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                          <FileCode className="h-6 w-6 text-purple-600" />
+                                        </div>
+                                      ) : isPdfFile(attachment.fileName) ? (
+                                        <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                          <FileText className="h-6 w-6 text-red-600" />
+                                        </div>
+                                      ) : (
+                                        <div className="h-12 w-12 bg-slate-100 rounded-lg flex items-center justify-center">
+                                          <FileText className="h-6 w-6 text-slate-600" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-text-primary truncate">
                                         {attachment.fileName}
-                                      </span>
+                                      </p>
+                                      <p className="text-xs text-text-secondary">
+                                        {isExcelFile(attachment.fileName) || isCsvFile(attachment.fileName) ? "Spreadsheet" : isWordFile(attachment.fileName) ? "Word Document" : isPowerPointFile(attachment.fileName) ? "Presentation" : isZipFile(attachment.fileName) ? "Archive" : isJsonFile(attachment.fileName) ? "JSON" : isPdfFile(attachment.fileName) ? "PDF" : "File"}
+                                      </p>
                                     </div>
-                                    <div className="mt-1">
-                                      <a
-                                        href={attachment.publicUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex items-center gap-1 rounded-lg bg-[#14b6a6] px-2 py-1 text-xs text-white hover:bg-[#0d9488] transition-colors"
-                                      >
-                                        <FileText className="h-3 w-3" />
-                                        Open File
-                                      </a>
-                                    </div>
+                                    <button
+                                      onClick={() => downloadFile(attachment.publicUrl, attachment.fileName)}
+                                      className="flex-shrink-0 inline-flex items-center justify-center h-10 w-10 rounded-full bg-[#14b6a6]/10 text-[#14b6a6] hover:bg-[#14b6a6]/20 transition-colors"
+                                      title="Download"
+                                    >
+                                      <Download className="h-5 w-5" />
+                                    </button>
                                   </div>
                                 )}
                               </div>
@@ -758,6 +880,45 @@ export function ConsolidatedPatientChatClient({
         items={galleryItems}
         title={`Files — Dr. ${doctorName}`}
       />
+
+      {/* Image Lightbox Modal */}
+      {imageModalOpen && selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setImageModalOpen(false)}
+        >
+          <div className="relative max-w-full max-h-full">
+            <button
+              onClick={() => setImageModalOpen(false)}
+              className="absolute -top-12 right-0 p-2 text-white hover:bg-white/20 rounded-full transition-colors"
+              title="Close"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <img
+              src={selectedImage.url}
+              alt={selectedImage.fileName}
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg">
+              <p className="text-white text-sm font-medium truncate">
+                {selectedImage.fileName}
+              </p>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  downloadFile(selectedImage.url, selectedImage.fileName);
+                }}
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

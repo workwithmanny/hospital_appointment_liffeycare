@@ -12,6 +12,7 @@ type ProfileUpdatePayload = {
   hospital?: string | null;
   certification?: string | null;
   gender?: "male" | "female" | "other" | "prefer_not_say" | null;
+  has_completed_onboarding?: boolean;
 };
 
 export async function GET() {
@@ -24,7 +25,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "id, role, full_name, phone, avatar_url, specialty, consultation_price, age, allergies, hospital, certification, gender, doctor_approved",
+      "id, role, full_name, phone, avatar_url, specialty, consultation_price, age, allergies, hospital, certification, gender, doctor_approved, has_completed_onboarding",
     )
     .eq("id", userData.user.id)
     .single();
@@ -81,14 +82,16 @@ export async function PATCH(req: Request) {
     typeof payload.certification === "string"
   )
     update.certification = payload.certification;
-  if (
-    payload.gender === null ||
+  if (payload.gender === null ||
     payload.gender === "male" ||
     payload.gender === "female" ||
     payload.gender === "other" ||
     payload.gender === "prefer_not_say"
   ) {
     update.gender = payload.gender;
+  }
+  if (typeof payload.has_completed_onboarding === "boolean") {
+    update.has_completed_onboarding = payload.has_completed_onboarding;
   }
 
   // Prevent empty updates
@@ -101,7 +104,7 @@ export async function PATCH(req: Request) {
     .update(update)
     .eq("id", userData.user.id)
     .select(
-      "id, role, full_name, phone, avatar_url, specialty, consultation_price, age, allergies, hospital, certification, gender, doctor_approved",
+      "id, role, full_name, phone, avatar_url, specialty, consultation_price, age, allergies, hospital, certification, gender, doctor_approved, has_completed_onboarding",
     )
     .single();
 

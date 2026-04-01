@@ -271,7 +271,7 @@ export default async function AuthStatusPage({
         {/* Help Link */}
         <div className="text-center mt-6">
           <a 
-            href="mailto:support@liffeycare.com" 
+            href="mailto:contact@liffeycare.online" 
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
           >
             <AlertCircle className="w-4 h-4" />

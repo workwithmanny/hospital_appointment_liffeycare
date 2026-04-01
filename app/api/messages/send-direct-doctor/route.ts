@@ -5,7 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 const sendDirectDoctorSchema = z.object({
   patientId: z.string().uuid(),
-  body: z.string().min(1).max(1000),
+  body: z.string().max(1000),
   attachment: z
     .object({
       fileName: z.string(),
@@ -19,6 +19,9 @@ const sendDirectDoctorSchema = z.object({
       publicUrl: z.string().url().optional(),
     })
     .optional(),
+}).refine((data) => data.body.length > 0 || data.attachment, {
+  message: "Message or attachment is required",
+  path: ["body"],
 });
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -54,7 +57,7 @@ export async function POST(request: Request) {
     .insert({
       sender_id: user.id,
       recipient_id: parsed.data.patientId,
-      body: parsed.data.body,
+      body: parsed.data.body || "\u200B", // zero-width space for file-only messages
       message_type: "direct",
     })
     .select("id")

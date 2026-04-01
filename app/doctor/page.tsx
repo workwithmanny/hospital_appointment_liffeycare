@@ -13,6 +13,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { format } from "date-fns";
+import { OnboardingBanner } from "@/components/onboarding-banner";
 
 export default async function DoctorPage() {
   const user = await getSessionUser();
@@ -64,7 +65,7 @@ export default async function DoctorPage() {
   // Get doctor profile for sidebar
   const doctorWithAvatar = await supabase
     .from("profiles")
-    .select("full_name, specialty, avatar_url")
+    .select("full_name, specialty, avatar_url, has_completed_onboarding")
     .eq("id", user.id)
     .single();
   const doctorWithoutAvatar =
@@ -72,7 +73,7 @@ export default async function DoctorPage() {
     String(doctorWithAvatar.error.message).includes("avatar_url")
       ? await supabase
           .from("profiles")
-          .select("full_name, specialty")
+          .select("full_name, specialty, has_completed_onboarding")
           .eq("id", user.id)
           .single()
       : null;
@@ -87,6 +88,17 @@ export default async function DoctorPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      {/* Onboarding Banner - only show for first-time users */}
+      {!doctorProfile?.has_completed_onboarding && (
+        <div className="mb-6">
+          <OnboardingBanner 
+            userId={user?.id ?? ""} 
+            profilePath="/doctor/settings" 
+            role="doctor" 
+          />
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">

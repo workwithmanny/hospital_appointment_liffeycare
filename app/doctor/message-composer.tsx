@@ -69,8 +69,17 @@ export function MessageComposer({
     try {
       const form = new FormData(event.currentTarget);
       const body = String(form.get("body") || "").trim();
-      if (!body) throw new Error("Type a message.");
       const file = form.get("file");
+      if (!body && !(file instanceof File && file.size > 0) && !attachment) {
+        toast.push({
+          kind: "error",
+          title: "Empty message",
+          message: "Please type a message or attach a file.",
+          ttlMs: 3000,
+        });
+        setLoading(false);
+        return;
+      }
       let fileAttachment = attachment;
       if (file instanceof File && file.size > 0) {
         fileAttachment = await upload(file, targetId);

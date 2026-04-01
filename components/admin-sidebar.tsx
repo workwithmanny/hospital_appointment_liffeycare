@@ -15,6 +15,7 @@ import {
   Shield,
   Menu,
   X,
+  MessageSquare,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -77,6 +78,12 @@ export function AdminSidebar({ adminProfile }: AdminSidebarProps) {
       label: "Approvals",
       icon: CheckCircle,
       active: pathname?.startsWith("/admin/approvals"),
+    },
+    {
+      href: "/admin/messages",
+      label: "Messages",
+      icon: MessageSquare,
+      active: pathname?.startsWith("/admin/messages"),
     },
     {
       href: "/admin/departments",

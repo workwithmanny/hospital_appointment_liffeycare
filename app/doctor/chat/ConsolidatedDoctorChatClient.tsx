@@ -701,6 +701,7 @@ export function ConsolidatedDoctorChatClient({
           {selectedThread && (
             <DirectMessageComposer
               compact
+              userRole="doctor"
               recipientId={selectedThread.patient_id}
               recipientName={selectedThread.patient.full_name}
               onSent={(sent) => {

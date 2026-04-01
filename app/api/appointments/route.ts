@@ -259,6 +259,16 @@ export async function POST(request: Request) {
   if (Number.isNaN(slotDate.getTime())) {
     return NextResponse.json({ error: "Invalid slot time." }, { status: 400 });
   }
+
+  // Prevent booking appointments in the past
+  const now = new Date();
+  if (slotDate.getTime() < now.getTime()) {
+    return NextResponse.json(
+      { error: "Cannot book appointments in the past. Please select a future date and time." },
+      { status: 400 },
+    );
+  }
+
   const slotDow = slotDate.getUTCDay(); // 0..6
   const slotTime = `${String(slotDate.getUTCHours()).padStart(2, "0")}:${String(
     slotDate.getUTCMinutes(),
@@ -469,7 +479,7 @@ export async function POST(request: Request) {
     .eq("id", parsed.data.doctorId)
     .single();
 
-  // Send patient confirmation email
+  // Send patient confirmation email immediately
   await dispatchNotification("booking_confirmed", {
     email: user.email,
     patientName: patientProfile?.full_name || "Patient",
@@ -481,8 +491,8 @@ export async function POST(request: Request) {
     appUrl,
   }).catch((err) => console.error("Failed to send patient email:", err));
 
-  // Send doctor notification email
-  if (doctorAuth?.email) {
+  // Send doctor notification email ONLY for pay_at_clinic (Stripe notifications sent after payment)
+  if (parsed.data.paymentMethod === "pay_at_clinic" && doctorAuth?.email) {
     await dispatchNotification("booking_confirmed_doctor", {
       email: doctorAuth.email,
       patientName: patientProfile?.full_name || "Patient",

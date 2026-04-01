@@ -2,25 +2,30 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
+
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (user.role !== "patient")
+  if (user.role !== "doctor")
     return NextResponse.json(
-      { error: "Only patients can upload files" },
+      { error: "Only doctors can upload files" },
       { status: 403 },
     );
+
   const formData = await request.formData();
   const file = formData.get("file") as File;
-  const doctorId = formData.get("doctorId") as string;
+  const patientId = formData.get("patientId") as string;
+
   if (!file)
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
-  if (!doctorId)
-    return NextResponse.json({ error: "Doctor ID required" }, { status: 400 });
+  if (!patientId)
+    return NextResponse.json({ error: "Patient ID required" }, { status: 400 });
+
   const maxSize = 20 * 1024 * 1024;
   if (file.size > maxSize)
     return NextResponse.json({ error: "File too large" }, { status: 400 });
+
   const allowedTypes = [
     // Images
     "image/jpeg",
@@ -58,12 +63,12 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
   try {
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
     );
-
     // Update bucket to allow all MIME types we support
     const { error: bucketError } = await supabaseAdmin.storage.updateBucket("message-files", {
       public: true,
@@ -93,7 +98,7 @@ export async function POST(request: Request) {
 
     const fileExt = file.name.split(".").pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `direct-messages/${user.id}/${doctorId}/${fileName}`;
+    const filePath = `direct-messages/${user.id}/${patientId}/${fileName}`;
     const { error: uploadError } = await supabaseAdmin.storage
       .from("message-files")
       .upload(filePath, file);

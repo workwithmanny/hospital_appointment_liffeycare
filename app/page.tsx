@@ -139,15 +139,30 @@ export default function HomePage() {
   const footerLinks = [
     {
       title: "Patients",
-      links: ["Find a Doctor", "Book Appointment", "Patient Portal", "Insurance"],
+      links: [
+        { label: "Find a Doctor", href: "/doctors" },
+        { label: "Book Appointment", href: "/doctors" },
+        { label: "Patient Portal", href: "/auth/login" },
+        { label: "Insurance", href: "/insurance" },
+      ],
     },
     {
       title: "Company",
-      links: ["About Us", "Careers", "Contact", "Blog"],
+      links: [
+        { label: "About Us", href: "/about" },
+        { label: "Careers", href: "/careers" },
+        { label: "Contact", href: "/contact" },
+        { label: "Blog", href: "/blog" },
+      ],
     },
     {
       title: "Providers",
-      links: ["Doctor Login", "Admin Login", "Join Network", "Resources"],
+      links: [
+        { label: "Doctor Login", href: "/auth/login" },
+        { label: "Admin Login", href: "/auth/login/admin" },
+        { label: "Join Network", href: "/careers" },
+        { label: "Resources", href: "/services" },
+      ],
     },
   ];
 
@@ -173,15 +188,10 @@ export default function HomePage() {
             </Link>
 
             <nav className="hidden md:flex items-center gap-8">
-              {["Services", "Doctors", "About", "Contact"].map((item) => (
-                <Link
-                  key={item}
-                  href={`#${item.toLowerCase()}`}
-                  className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors"
-                >
-                  {item}
-                </Link>
-              ))}
+              <Link href="/services" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Services</Link>
+              <Link href="/doctors" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Doctors</Link>
+              <Link href="/about" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">About</Link>
+              <Link href="/contact" className="text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">Contact</Link>
             </nav>
 
             <div className="flex items-center gap-3">
@@ -265,7 +275,7 @@ export default function HomePage() {
                       className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white object-cover"
                     />
                     <img
-                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80"
+                      src="https://images.unsplash.com/photo-1472099645785-f1b5022eb634?auto=format&fit=crop&w=100&q=80"
                       alt="Patient"
                       className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white object-cover hidden sm:block"
                     />
@@ -527,13 +537,13 @@ export default function HomePage() {
                 <h4 className="font-semibold text-white mb-4">{section.title}</h4>
                 <ul className="space-y-3">
                   {section.links.map((link) => (
-                    <li key={link}>
-                      <a
-                        href="#"
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
                         className="text-sm text-text-tertiary hover:text-white transition-colors"
                       >
-                        {link}
-                      </a>
+                        {link.label}
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -544,25 +554,19 @@ export default function HomePage() {
           <div className="border-t border-white/10 pt-8">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
               <p className="text-sm text-text-tertiary">
-                2024 LiffeyCare. All rights reserved.
+                2026 LiffeyCare. All rights reserved.
               </p>
               <div className="flex flex-wrap gap-6 text-sm justify-center">
-                {["Privacy Policy", "Terms of Service", "HIPAA Compliance"].map((item) => (
-                  <a
-                    key={item}
-                    href="#"
-                    className="text-text-tertiary hover:text-white transition-colors"
-                  >
-                    {item}
-                  </a>
-                ))}
-                <Link
-                  href="/auth/login/admin"
-                  className="text-text-tertiary hover:text-white transition-colors"
-                >
-                  Admin Login
-                </Link>
-              </div>
+                <Link href="/privacy-policy" className="text-text-tertiary hover:text-white transition-colors">Privacy Policy</Link>
+                <Link href="/terms-of-service" className="text-text-tertiary hover:text-white transition-colors">Terms of Service</Link>
+                <Link href="/hipaa-compliance" className="text-text-tertiary hover:text-white transition-colors">HIPAA Compliance</Link>
+              </div>  
+              <Link
+                href="/auth/login/admin"
+                className="text-text-tertiary hover:text-white transition-colors"
+              >
+                Admin Login
+              </Link>
             </div>
           </div>
         </div>

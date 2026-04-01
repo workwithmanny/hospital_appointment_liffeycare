@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { dispatchNotification } from "@/lib/notifications/dispatcher";
 
 /** Idempotently mark an appointment paid from a completed Checkout Session (webhook or return URL). */
 export async function markAppointmentPaidFromStripeSession(
@@ -34,7 +35,7 @@ export async function markAppointmentPaidFromStripeSession(
 
   const { data: existing, error: existingErr } = await admin
     .from("appointments")
-    .select("id, payment_status, doctor_id")
+    .select("id, payment_status, doctor_id, slot_time, session_notes, patient:patient_id(full_name, email), doctor:doctor_id(full_name, email)")
     .eq("id", appointmentId)
     .maybeSingle();
 
@@ -105,6 +106,23 @@ export async function markAppointmentPaidFromStripeSession(
         ledgerError,
       );
     }
+  }
+
+  // 4. Send doctor notification email (only when payment is confirmed)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const patient = (existing as any).patient;
+  const doctor = (existing as any).doctor;
+  
+  if (doctor?.email) {
+    await dispatchNotification("booking_confirmed_doctor", {
+      email: doctor.email,
+      patientName: patient?.full_name || "Patient",
+      doctorName: doctor?.full_name || "Doctor",
+      slotTime: existing.slot_time,
+      appointmentId: existing.id,
+      reason: existing.session_notes || undefined,
+      appUrl,
+    }).catch((err) => console.error("Failed to send doctor email:", err));
   }
 
   console.log("markAppointmentPaid: successfully marked paid");

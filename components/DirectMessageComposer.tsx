@@ -1,7 +1,7 @@
 "use client";
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Paperclip, Send } from "lucide-react";
+import { Paperclip, Send, X, FileText, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 type Attachment = {
@@ -15,6 +15,7 @@ type Attachment = {
 type DirectMessageComposerProps = {
   recipientId: string;
   recipientName: string;
+  userRole?: "patient" | "doctor";
   appointmentId?: string; // Optional - for appointment messages
   threadId?: string; // Optional - for thread-based messages
   onSent?: (message: {
@@ -33,6 +34,7 @@ type DirectMessageComposerProps = {
 export function DirectMessageComposer({
   recipientId,
   recipientName,
+  userRole = "patient",
   appointmentId,
   threadId,
   onSent,
@@ -43,7 +45,8 @@ export function DirectMessageComposer({
   const [loading, setLoading] = useState(false);
   const [bodyText, setBodyText] = useState("");
   const [attachment, setAttachment] = useState<Attachment | null>(null);
-  const [selectedFileName, setSelectedFileName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   async function upload(file: File) {
@@ -51,11 +54,19 @@ export function DirectMessageComposer({
     form.append("file", file);
     
     // Use appropriate upload endpoint based on whether this is an appointment or direct message
-    const uploadEndpoint = appointmentId ? "/api/messages/upload" : "/api/messages/upload-direct";
+    let uploadEndpoint: string;
     if (appointmentId) {
+      uploadEndpoint = "/api/messages/upload";
       form.append("appointmentId", appointmentId);
     } else {
-      form.append("recipientId", recipientId);
+      // For direct messages, use different endpoint based on user role
+      if (userRole === "doctor") {
+        uploadEndpoint = "/api/messages/upload-direct-doctor";
+        form.append("patientId", recipientId);
+      } else {
+        uploadEndpoint = "/api/messages/upload-direct";
+        form.append("doctorId", recipientId);
+      }
     }
     
     const res = await fetch(uploadEndpoint, {
@@ -70,6 +81,27 @@ export function DirectMessageComposer({
       throw new Error(data.error ?? "Upload failed.");
     }
     return data.attachment;
+  }
+
+  function clearAttachment() {
+    setAttachment(null);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setSelectedFile(file);
+    
+    if (file && file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
+    }
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -89,39 +121,44 @@ export function DirectMessageComposer({
     try {
       const form = new FormData(event.currentTarget);
       const body = String(form.get("body") || "").trim();
-      if (!body) throw new Error("Type a message.");
-
       const file = form.get("file");
-      let fileAttachment = attachment;
-      if (file instanceof File && file.size > 0) {
-        fileAttachment = await upload(file);
-        setAttachment(fileAttachment);
+      
+      if (!body && !(file instanceof File && file.size > 0) && !attachment) {
+        throw new Error("Please type a message or attach a file.");
       }
 
-      // Use appropriate send endpoint based on whether this is a thread, appointment, or direct message
+      const fileAttachment = attachment;
+      
       let sendEndpoint: string;
       let requestBody: any;
+
+      if (file instanceof File && file.size > 0) {
+        const uploaded = await upload(file);
+        setAttachment(uploaded);
+        // Update fileAttachment for this send
+        var uploadedAttachment = uploaded;
+      }
 
       if (threadId) {
         sendEndpoint = "/api/messages/send-thread";
         requestBody = {
           threadId,
           body,
-          attachment: fileAttachment ?? undefined,
+          attachment: uploadedAttachment ?? fileAttachment ?? undefined,
         };
       } else if (appointmentId) {
         sendEndpoint = "/api/messages/send";
         requestBody = {
           appointmentId,
           body,
-          attachment: fileAttachment ?? undefined,
+          attachment: uploadedAttachment ?? fileAttachment ?? undefined,
         };
       } else {
         sendEndpoint = "/api/messages/send-direct-chat";
         requestBody = {
           recipientId,
           body,
-          attachment: fileAttachment ?? undefined,
+          attachment: uploadedAttachment ?? fileAttachment ?? undefined,
         };
       }
 
@@ -170,9 +207,14 @@ export function DirectMessageComposer({
         ttlMs: 2200,
       });
 
+      // Clear all state including file input
       setAttachment(null);
-      setSelectedFileName("");
+      setSelectedFile(null);
+      setPreviewUrl(null);
       setBodyText("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
 
       if (!onSent) {
         router.refresh();
@@ -229,19 +271,59 @@ export function DirectMessageComposer({
           name="file"
           type="file"
           className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            setSelectedFileName(file?.name ?? "");
-          }}
+          onChange={handleFileSelect}
         />
-        {selectedFileName ? (
-          <div className="mt-2 text-xs text-slate-500 px-1">
-            Attached:{" "}
-            <span className="font-medium text-slate-700">
-              {selectedFileName}
-            </span>
+        {(selectedFile || previewUrl) && (
+          <div className="mt-2 px-1">
+            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200">
+              {previewUrl ? (
+                <div className="relative">
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="h-16 w-16 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearAttachment}
+                    className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                    title="Remove attachment"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="h-10 w-10 bg-slate-200 rounded-lg flex items-center justify-center">
+                    {selectedFile?.type.startsWith("image/") ? (
+                      <ImageIcon className="h-5 w-5 text-slate-500" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-slate-500" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 truncate">
+                      {selectedFile?.name}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {(selectedFile?.size ?? 0) > 1024 * 1024
+                        ? `${((selectedFile?.size ?? 0) / (1024 * 1024)).toFixed(1)} MB`
+                        : `${((selectedFile?.size ?? 0) / 1024).toFixed(0)} KB`}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearAttachment}
+                    className="h-8 w-8 flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Remove attachment"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        ) : null}
+        )}
       </div>
     </form>
   );

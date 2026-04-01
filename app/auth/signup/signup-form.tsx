@@ -69,6 +69,8 @@ export function SignupForm({ role = "patient" }: SignupFormProps) {
         phone,
         role: finalRole,
         doctor_approved: finalRole === "doctor" ? false : true,
+        specialty: finalRole === "doctor" ? specialty : undefined,
+        certification: finalRole === "doctor" ? licenseNumber : undefined,
       });
     }
     setMessage(

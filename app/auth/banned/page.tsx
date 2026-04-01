@@ -122,7 +122,7 @@ export default function AccountBannedPage() {
                     If you believe this was a mistake or need assistance, please contact our support team.
                   </p>
                   <a
-                    href="mailto:support@liffeycare.com?subject=Account Suspension Appeal"
+                    href="mailto:contact@liffeycare.online?subject=Account Suspension Appeal"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-md"
                   >
                     <Mail className="w-4 h-4" />
@@ -157,7 +157,7 @@ export default function AccountBannedPage() {
         {/* Footer */}
         <div className="text-center mt-8 space-y-2">
           <p className="text-sm text-gray-500">
-            © 2024 LiffeyCare. All rights reserved.
+            © 2026 LiffeyCare. All rights reserved.
           </p>
           <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
             <a href="/terms" className="hover:text-gray-600">Terms of Service</a>
