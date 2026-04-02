@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { ToastProvider } from "@/components/ui/toast";
 import { ClientNotificationProvider } from "@/components/notifications/ClientNotificationProvider";
 import { SessionProviderWrapper } from "@/components/session/SessionProviderWrapper";
+import { Analytics } from "@vercel/analytics/next";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -49,6 +50,7 @@ export default function RootLayout({
             </SessionProviderWrapper>
           </ClientNotificationProvider>
         </ToastProvider>
+        <Analytics />
       </body>
     </html>
   );
